@@ -20,7 +20,7 @@ if not opt then
    cmd:option('-input_labels_h5','data/train/labels.h5','path to labels for input images ')
    cmd:option('-save', 'results/country/', 'subdirectory to save/log experiments in')
   --  cmd:option('-visualize', false, 'visualize input data and weights during training')
-   cmd:option('-plot', false, 'live plot')
+   cmd:option('-plot', true, 'live plot')
    cmd:option('-optimization', 'SGD', 'optimization method: SGD | ASGD | CG | LBFGS')
    cmd:option('-learningRate', 1e-3, 'learning rate at t=0')
    cmd:option('-batchSize', 500, 'mini-batch size (1 = pure stochastic)')
@@ -112,6 +112,8 @@ function train()
     print('==> doing epoch on training data:')
     print("==> online epoch # " .. epoch .. ' [batchSize = ' .. opt.batchSize .. ']')
     for t = 1,trsize,opt.batchSize do
+
+       xlua.progress(t, trainData:size())
       -- create mini batch
           local inputs = {}
           local targets = {}
@@ -162,7 +164,7 @@ function train()
 			      if idx==targets[i] then
 			      	total_correct = total_correct + 1
 				print(total_correct)
-			     end 
+			     end
                               local err = criterion:forward(output, targets[i])
                               --print(err);
                               f = f + err
@@ -195,6 +197,13 @@ function train()
        time = sys.clock() - time
        time = time / trsize
        print("\n==> time to learn 1 sample = " .. (time*1000) .. 'ms')
+
+       -- update logger/plot
+       trainLogger:add{['% mean class accuracy (train set)'] = confusion.totalValid * 100}
+       if opt.plot then
+         trainLogger:style{['% mean class accuracy (train set)'] = '-'}
+         trainLogger:plot()
+       end
 
       --  -- print confusion matrix
       --  print(confusion)
